@@ -1,5 +1,5 @@
 import { open, all } from './db.mjs';
-import { runMatching, draftOutreach, analyzeAll } from './app.mjs';
+import { runMatching, draftOutreach, analyzeAll, logResponse } from './app.mjs';
 
 const db = open();
 const [cmd] = process.argv.slice(2);
@@ -15,8 +15,15 @@ else if (cmd === 'draft-prospects') {
     console.log(`draft #${id} → ${b.company ?? b.name}`);
   }
   if (!prospects.length) console.log('No uncontacted prospects.');
+} else if (cmd === 'log-reply') {
+  // node src/cli.mjs log-reply <domain> <interested|responded|not_interested|opt_out> "<reply text>"
+  const [, domain, outcome, text] = process.argv.slice(2);
+  const m = all(db, `SELECT o.id FROM outreach o JOIN buyers b ON b.id = o.buyer_id
+    WHERE o.status = 'SENT' AND (b.website LIKE ? OR b.contact_value LIKE ?) ORDER BY o.id DESC LIMIT 1`, `%${domain}%`, `%${domain}%`)[0];
+  if (!m) { console.log(`No SENT outreach for ${domain} (already logged, or not contacted).`); }
+  else { logResponse(db, m.id, { outcome, text }, 'daily-task'); console.log(`logged ${outcome} on outreach #${m.id}`); }
 } else {
-  console.log('usage: node src/cli.mjs match|analyze|draft-prospects');
+  console.log('usage: node src/cli.mjs match|analyze|draft-prospects|log-reply');
   process.exitCode = 1;
 }
 db.close();
