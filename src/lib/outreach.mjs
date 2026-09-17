@@ -12,9 +12,10 @@ function sender(s) {
   return { name: f('sender_name'), business: f('sender_business'), email: f('sender_email'), postal: f('sender_postal') };
 }
 
-function signature(s, withOptOut) {
+// The postal line is a CAN-SPAM requirement for email; a message typed into a business's own contact form is not an email we send.
+function signature(s, withOptOut, channel = 'email') {
   const x = sender(s);
-  return `${x.name}\n${x.business} · ${x.email}\n${x.postal}` + (withOptOut ? '\n\nReply "no" and I will not contact you again.' : '');
+  return `${x.name}\n${x.business} · ${x.email}` + (channel === 'contact_form' ? '' : `\n${x.postal}`) + (withOptOut ? '\n\nReply "no" and I will not contact you again.' : '');
 }
 
 const recipientName = b => b.name || b.company || MISSING('recipient_name');
@@ -23,7 +24,7 @@ export const TEMPLATES = {
   investor_service_offer: {
     audience: 'investor', channel: 'email', track: 'client',
     objective: 'Get a reply asking for the free 10-property sample (starts client pipeline).',
-    render: ({ b, s, stats, example }) => ({
+    render: ({ b, s, stats, example, channel }) => ({
       subject: `Free sample: ${stats.qualified} scored distressed properties in ${s.market_city ?? 'Cleveland'} (public records)`,
       body: `Hi ${recipientName(b)},
 
@@ -36,7 +37,7 @@ Example (address withheld): ${example}
 
 Would a free sample of 10 for your target neighborhoods be useful? If it is, the weekly list is ${usd(Number(s.service_price_week)) ?? MISSING('service_price_week')}/week. If not, I won't follow up.
 
-${signature(s, true)}`,
+${signature(s, true, channel)}`,
     }),
   },
 

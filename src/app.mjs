@@ -140,8 +140,8 @@ export function draftOutreach(db, { template, buyer_id, property_id, opportunity
   const top = one(db, `SELECT p.* FROM properties p JOIN opportunities o ON o.property_id=p.id AND o.track='deal'
     WHERE o.stage != 'LEAD' AND o.failure IS NULL ORDER BY p.score DESC, p.est_arv DESC LIMIT 1`);
   const example = exampleLine(top);
-  const ch = channel ?? (b?.contact_method === 'facebook' ? 'facebook' : t.channel);
-  const { subject, body } = t.render({ b, p, o, s, stats, example });
+  const ch = channel ?? (['facebook', 'contact_form'].includes(b?.contact_method) ? b.contact_method : t.channel);
+  const { subject, body } = t.render({ b, p, o, s, stats, example, channel: ch });
   const flags = riskFlags({ template, channel: ch, b, p, o, s });
   if (hasMissing(body)) flags.push({ level: 'BLOCK', msg: `Missing facts: ${missingKeys(body).join(', ')}. Fill them in (Settings or record), then re-draft.` });
   const recipient = t.audience === 'owner' ? `${p.owner_name ?? 'Owner'} — ${p.owner_mailing ?? 'mailing address UNKNOWN'}`
