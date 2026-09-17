@@ -84,11 +84,14 @@ createServer(async (req, res) => {
       }
       return json(res, 404, { error: 'No such route' });
     }
-    const file = resolve(ROOT, 'public', url.pathname === '/' ? 'index.html' : url.pathname.slice(1));
-    if (!file.startsWith(resolve(ROOT, 'public'))) return json(res, 403, { error: 'Forbidden' });
+    const dir = resolve(ROOT, url.pathname.startsWith('/reports/') ? '.' : 'public');
+    const file = resolve(dir, url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname.slice(1)));
+    if (!file.startsWith(dir === ROOT ? resolve(ROOT, 'reports') : dir)) return json(res, 403, { error: 'Forbidden' });
+    const content = await readFile(file); // read before writing headers so a missing file can still 404
     res.writeHead(200, { 'Content-Type': MIME[extname(file)] ?? 'application/octet-stream' });
-    res.end(await readFile(file));
+    res.end(content);
   } catch (e) {
+    if (res.headersSent) return res.end();
     json(res, e.status ?? (e.code === 'ENOENT' ? 404 : 500), { error: e.message });
   }
 }).listen(PORT, HOST, () => console.log(`Deal Desk on http://${HOST}:${PORT}`));

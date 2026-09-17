@@ -11,6 +11,7 @@
     "ingest": "node --disable-warning=ExperimentalWarning src/ingest/cleveland.mjs",
     "match": "node --disable-warning=ExperimentalWarning src/cli.mjs match",
     "draft:prospects": "node --disable-warning=ExperimentalWarning src/cli.mjs draft-prospects",
+    "packet": "node --disable-warning=ExperimentalWarning src/packet.mjs",
     "daily": "node --disable-warning=ExperimentalWarning src/daily.mjs",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.mjs"
   }

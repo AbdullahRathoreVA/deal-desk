@@ -58,6 +58,7 @@ dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:0}dt{c
 .flags li{display:flex;gap:8px;align-items:baseline}
 .card{border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--surface)}
 .muted{color:var(--muted)}
+.demo .pii{filter:blur(5px)}
 #toast{position:fixed;right:16px;bottom:16px;background:var(--ink);color:var(--ground);padding:8px 14px;border-radius:8px}
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);width:min(760px,calc(100vw - 32px));padding:20px}
 dialog::backdrop{background:rgb(0 0 0/.35)}
@@ -81,7 +82,8 @@ const chip=(t,cls=t)=>`<span class="chip ${esc(cls)}">${esc(t)}</span>`;
 const api=async(path,opt={})=>{const r=await fetch('/api/'+path,{...opt,headers:{'Content-Type':'application/json'},body:opt.body&&JSON.stringify(opt.body)});const j=await r.json();if(!r.ok)throw new Error(j.error);return j};
 const toast=m=>{const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,4000)};
 const act=async(fn,ok)=>{try{await fn();if(ok)toast(ok);render()}catch(e){toast(e.message)}};
-let view=(()=>{try{return localStorage.getItem('dd.view')}catch{return null}})()||'today';
+if(new URLSearchParams(location.search).has('demo'))document.documentElement.classList.add('demo');
+let view=location.hash.slice(1)||(()=>{try{return localStorage.getItem('dd.view')}catch{return null}})()||'today';
 
 function navigate(v){view=v;try{localStorage.setItem('dd.view',v)}catch{}render()}
 async function renderNav(){
@@ -100,7 +102,7 @@ async today(){
   <section class="next"><h2>Next action</h2><p>${esc(r.next_action)}</p></section>
   ${r.blockers.length?`<section class="panel"><h2>Blockers</h2><ul class="flags">${r.blockers.map(b=>`<li>${chip('BLOCK')}<span>${esc(b)}</span></li>`).join('')}</ul></section>`:''}
   <div class="grid">
-   <section class="panel"><h2>Today's opportunities</h2>${r.opportunities.map(p=>`<div class="row" style="justify-content:space-between"><a href="#" onclick="showProperty(${p.id});return false">${esc(p.address)}</a><span class="mono">score ${p.score}</span></div><div class="muted">${esc(p.neighborhood)} · ARV ${usd(p.est_arv)} ${chip('ESTIMATED')} · max contract ${usd(p.offer_high)}</div>`).join('')||'<p class="muted">Run the ingest to find properties.</p>'}</section>
+   <section class="panel"><h2>Today's opportunities</h2>${r.opportunities.map(p=>`<div class="row" style="justify-content:space-between"><a href="#" class="pii" onclick="showProperty(${p.id});return false">${esc(p.address)}</a><span class="mono">score ${p.score}</span></div><div class="muted">${esc(p.neighborhood)} · ARV ${usd(p.est_arv)} ${chip('ESTIMATED')} · max contract ${usd(p.offer_high)}</div>`).join('')||'<p class="muted">Run the ingest to find properties.</p>'}</section>
    <section class="panel"><h2>Your actions</h2>${r.tasks.map(t=>`<div class="row">${chip(t.kind)}<span>${esc(t.title)}</span></div>`).join('')||'<p class="muted">Nothing due.</p>'}
      <div class="row"><span class="mono">${r.approvals.length}</span> drafts to review · <span class="mono">${r.approved.length}</span> approved to send</div></section>
    <section class="panel"><h2>Money</h2><dl><dt>Actual revenue</dt><dd class="mono">${usd(o.actual_revenue??0)}</dd><dt>Expenses</dt><dd class="mono">${usd(o.expenses??0)}</dd><dt>Net profit</dt><dd class="mono">${usd(o.net_profit??0)}</dd><dt>Expected (not yet income)</dt><dd class="mono">${usd(o.expected_revenue??0)}</dd></dl></section>
@@ -111,15 +113,16 @@ async overview(){
   return `<header><h1>Overview</h1><p class="sub">Pipeline value counts only deals in active conversation. It is not income.</p></header><section class="kpis">${k.map(([l,v])=>`<div class="kpi"><b>${v??0}</b><span>${l}</span></div>`).join('')}</section>
   <section class="panel"><h2>What the qualified list could be worth</h2><p>${o.qualified_leads} qualified properties × the minimum target fee = <b class="mono">${usd(o.theoretical_spread_qualified??0)}</b> ${chip('ESTIMATED')}. Theoretical only: every one of them would need a willing owner, a signed contract and a buyer.</p></section>`},
 async properties(){
-  const f=V.pf??={q:'',min_score:40,sort:'score'};
-  const d=await api(`properties?q=${encodeURIComponent(f.q)}&min_score=${f.min_score}&sort=${f.sort}&limit=200`);
+  const f=V.pf??={q:'',min_score:40,sort:'score',stage:'QUALIFIED'};
+  const d=await api(`properties?q=${encodeURIComponent(f.q)}&min_score=${f.min_score}&sort=${f.sort}&stage=${f.stage}&limit=200`);
   const max=Math.max(1,...d.rows.map(r=>r.score));
   return `<header><h1>Leads & properties</h1><p class="sub">${d.total.toLocaleString()} matching · county facts are VERIFIED, economics are ESTIMATED</p></header>
   <div class="row"><input id="pq" placeholder="Address, zip, neighborhood, owner" value="${esc(f.q)}"><label>Min score <input id="pmin" type="number" value="${f.min_score}" style="width:70px"></label>
    <select id="psort">${['score','spread','arv','delinquency','recent'].map(s=>`<option ${s===f.sort?'selected':''}>${s}</option>`).join('')}</select>
-   <button class="btn primary" onclick="V.pf={q:$('#pq').value,min_score:$('#pmin').value||0,sort:$('#psort').value};render()">Filter</button></div>
+   <select id="pstage"><option value="QUALIFIED" ${f.stage?'selected':''}>Qualified only</option><option value="" ${f.stage?'':'selected'}>All scored</option></select>
+   <button class="btn primary" onclick="V.pf={q:$('#pq').value,min_score:$('#pmin').value||0,sort:$('#psort').value,stage:$('#pstage').value};render()">Filter</button></div>
   <div class="panel scroll"><table><thead><tr><th>Score</th><th>Address</th><th>Neighborhood</th><th>Units</th><th>Signals</th><th class="num">County value</th><th class="num">Est. ARV</th><th class="num">Est. repairs</th><th class="num">Max contract</th><th>Numbers</th><th>Stage</th></tr></thead><tbody>
-  ${d.rows.map(r=>`<tr class="click" onclick="showProperty(${r.id})"><td class="mono"><span class="bar" style="width:${Math.round(r.score/max*40)}px"></span>${r.score}</td><td>${esc(r.address)}<div class="muted mono">${esc(r.zip)}</div></td><td>${esc(r.neighborhood)}</td><td class="num">${r.units??''}</td>
+  ${d.rows.map(r=>`<tr class="click" onclick="showProperty(${r.id})"><td class="mono"><span class="bar" style="width:${Math.round(r.score/max*40)}px"></span>${r.score}</td><td class="pii">${esc(r.address)}<div class="muted mono">${esc(r.zip)}</div></td><td>${esc(r.neighborhood)}</td><td class="num">${r.units??''}</td>
   <td>${[r.foreclosure_flag?'foreclosure':'',r.tax_delinquent_amount>0?'tax '+usd(r.tax_delinquent_amount):'',r.violations_6mo?r.violations_6mo+' viol.':'',r.survey_category==='Vacant Structure'?'vacant':'',r.condition_grade&&'DF'.includes(r.condition_grade)?'grade '+r.condition_grade:'',r.owner_out_of_state?'out-of-state':''].filter(Boolean).map(s=>`<span class="chip">${esc(s)}</span>`).join(' ')}</td>
   <td class="num">${usd(r.county_market_value)}</td><td class="num">${usd(r.est_arv)}</td><td class="num">${usd(r.est_repairs)}</td><td class="num">${usd(r.offer_high)}</td><td>${chip(r.economics_flag??'—')}</td><td>${r.failure?chip(r.failure,'fail'):chip(r.stage??'—')}</td></tr>`).join('')}</tbody></table></div>`},
 async buyers(){
@@ -135,22 +138,22 @@ async buyers(){
 async approvals(){
   const m=await api('outreach?status=DRAFT');
   return `<header><h1>Approvals</h1><p class="sub">Draft → review → approve → you send it yourself → mark sent. Blocked drafts cannot be approved.</p></header>
-  ${m.map(x=>{const blocks=x.risk_flags.filter(f=>f.level==='BLOCK');return `<article class="card"><div class="row" style="justify-content:space-between"><b>${esc(x.recipient)}</b><span>${chip(x.template)} ${chip(x.channel)} ${blocks.length?chip('BLOCKED','BLOCK'):chip('READY','OK')}</span></div>
+  ${m.map(x=>{const blocks=x.risk_flags.filter(f=>f.level==='BLOCK');return `<article class="card"><div class="row" style="justify-content:space-between"><b class="pii">${esc(x.recipient)}</b><span>${chip(x.template)} ${chip(x.channel)} ${blocks.length?chip('BLOCKED','BLOCK'):chip('READY','OK')}</span></div>
    <dl><dt>Why selected</dt><dd>${esc(x.why_selected)}</dd><dt>Objective</dt><dd>${esc(x.objective)}</dd><dt>Facts used</dt><dd class="mono">${esc(JSON.stringify(x.facts_used.stats??x.facts_used.property??{}))}</dd></dl>
    <ul class="flags">${x.risk_flags.map(f=>`<li>${chip(f.level)}<span>${esc(f.msg)}</span></li>`).join('')}</ul>
-   <input id="s${x.id}" value="${esc(x.subject)}" aria-label="Subject"><textarea id="b${x.id}" aria-label="Message">${esc(x.body)}</textarea>
+   <input id="s${x.id}" value="${esc(x.subject)}" aria-label="Subject"><textarea id="b${x.id}" class="pii" aria-label="Message">${esc(x.body)}</textarea>
    <div class="row"><button class="btn primary" onclick="act(()=>api('outreach/${x.id}/review',{method:'POST',body:{decision:'approve',subject:$('#s${x.id}').value,body:$('#b${x.id}').value}}),'Approved. Send it from your own account, then mark it sent.')">Approve</button>
    <button class="btn danger" onclick="act(()=>api('outreach/${x.id}/review',{method:'POST',body:{decision:'reject'}}),'Rejected')">Reject</button></div></article>`}).join('')||'<p class="panel muted">No drafts waiting.</p>'}`},
 async outreach(){
   const m=(await api('outreach')).filter(x=>x.status!=='DRAFT');
   return `<header><h1>Outreach log</h1><p class="sub">Every message, its status, and follow-ups</p></header><div class="panel scroll"><table><thead><tr><th>#</th><th>Recipient</th><th>Template</th><th>Status</th><th>Sent</th><th>Follow up</th><th>Response</th><th></th></tr></thead><tbody>
-  ${m.map(x=>`<tr><td class="mono">${x.id}</td><td>${esc(x.recipient)}</td><td>${esc(x.template)}</td><td>${chip(x.status)}</td><td class="mono">${esc(x.sent_at?.slice(0,10))}</td><td class="mono">${esc(x.follow_up_at)}</td><td>${esc(x.response)}</td>
+  ${m.map(x=>`<tr><td class="mono">${x.id}</td><td class="pii">${esc(x.recipient)}</td><td>${esc(x.template)}</td><td>${chip(x.status)}</td><td class="mono">${esc(x.sent_at?.slice(0,10))}</td><td class="mono">${esc(x.follow_up_at)}</td><td>${esc(x.response)}</td>
   <td>${x.status==='APPROVED'?`<button class="btn" onclick="copyMsg(${x.id})">Copy</button> <button class="btn primary" onclick="act(()=>api('outreach/${x.id}/sent',{method:'POST'}),'Logged as sent')">Mark sent</button>`:''}
   ${x.status==='SENT'?`<select onchange="logResp(${x.id},this.value)"><option value="">Log reply…</option><option value="interested">interested</option><option value="responded">responded</option><option value="not_interested">not interested</option><option value="opt_out">opt out</option><option value="no_response">no response</option></select>`:''}</td></tr>`).join('')}</tbody></table></div>`},
 async deals(){
   const d=await api('opportunities?active=1'),S={deal:['LEAD','QUALIFIED','CONTACTED','RESPONDED','INTERESTED','PROPERTY_ANALYSIS','OFFER_DISCUSSION','CONTRACT_REVIEW','BUYER_MATCH','CLOSING','REVENUE'],client:['LEAD','QUALIFIED','CONTACTED','RESPONDED','INTERESTED','SAMPLE_SENT','PRICING','AGREEMENT','INVOICED','REVENUE']},F=['INVALID','NO_RESPONSE','NOT_INTERESTED','BAD_NUMBERS','DUPLICATE','BUYER_UNAVAILABLE','LEGAL_ISSUE','DATA_INSUFFICIENT'];
   return `<header><h1>Deals</h1><p class="sub">Client track = selling the research service. Deal track = your own contracts (locked until Track B is ready).</p></header><div class="panel scroll"><table><thead><tr><th>#</th><th>Track</th><th>Who / what</th><th>Stage</th><th>Gates</th><th class="num">Expected fee</th><th class="num">Actual</th><th>Move</th></tr></thead><tbody>
-  ${d.map(o=>`<tr><td class="mono">${o.id}</td><td>${chip(o.track)}</td><td>${esc(o.company??o.name??o.address)}</td><td>${o.failure?chip(o.failure,'fail'):chip(o.stage)}</td>
+  ${d.map(o=>`<tr><td class="mono">${o.id}</td><td>${chip(o.track)}</td><td class="pii">${esc(o.company??o.name??o.address)}</td><td>${o.failure?chip(o.failure,'fail'):chip(o.stage)}</td>
   <td>${o.track==='deal'?['contract_signed','seller_disclosure','professional_review'].map(g=>`<label class="mono"><input type="checkbox" ${o[g]?'checked':''} onchange="act(()=>api('opportunities/${o.id}',{method:'PATCH',body:{${g}:this.checked?1:0}}))"> ${g.replace('_',' ')}</label>`).join('<br>'):'—'}</td>
   <td class="num"><input type="number" value="${o.expected_fee??''}" style="width:90px" onchange="act(()=>api('opportunities/${o.id}',{method:'PATCH',body:{expected_fee:Number(this.value)}}))"></td>
   <td class="num"><input type="number" value="${o.actual_fee??''}" style="width:90px" onchange="act(()=>api('opportunities/${o.id}',{method:'PATCH',body:{actual_fee:Number(this.value)}}))"></td>
@@ -172,17 +175,17 @@ async tasks(){
 async settings(){
   const s=await api('settings');
   const F=[['sender_name','Your real name'],['sender_business','Business name'],['sender_email','Business email'],['sender_postal','Postal address (CAN-SPAM)'],['service_price_week','Weekly list price (USD)'],['fee_target_low','Min assignment fee target'],['fee_target_high','Max assignment fee target'],['payment_ready','Payment receiving set up (true/false)'],['track_b_ready','Track B ready: US entity + EMD + attorney-reviewed Ohio contract (true/false)']];
-  return `<header><h1>Settings</h1><p class="sub">Drafts use these exactly. Nothing is invented if a field is blank.</p></header><section class="panel"><dl>${F.map(([k,l])=>`<dt><label for="set_${k}">${l}</label></dt><dd><input id="set_${k}" value="${esc(s[k]??'')}" style="width:100%"></dd>`).join('')}</dl>
+  return `<header><h1>Settings</h1><p class="sub">Drafts use these exactly. Nothing is invented if a field is blank.</p></header><section class="panel"><dl>${F.map(([k,l])=>`<dt><label for="set_${k}">${l}</label></dt><dd><input class="${k.startsWith('sender')?'pii':''}" id="set_${k}" value="${esc(s[k]??'')}" style="width:100%"></dd>`).join('')}</dl>
   <div class="row"><button class="btn primary" onclick="act(()=>api('settings',{method:'PUT',body:Object.fromEntries(${JSON.stringify(F.map(f=>f[0]))}.map(k=>[k,$('#set_'+k).value]))}),'Settings saved')">Save</button></div></section>`},
 };
 
 async function showProperty(id){
   const p=await api('properties/'+id),pv=p.provenance,st=f=>chip(pv[f]?.status??'UNKNOWN');
   const facts=[['Parcel','parcel_id'],['Units','units'],['Living sq ft','living_sqft'],['Year built','year_built'],['Beds','beds'],['Baths','baths'],['Owner','owner_name'],['Owner mailing','owner_mailing'],['Last sale','last_sale_date'],['Last sale amount','last_sale_amount',1],['County market value','county_market_value',1],['Tax delinquent','tax_delinquent_amount',1],['Violations (6 mo / all)','violations_6mo'],['Condition (2022 survey)','condition_grade'],['Listing status','listing_status'],['Asking price','asking_price',1],['Est. ARV','est_arv',1],['Est. repairs','est_repairs',1],['Buyer max (70% rule)','mao',1],['Contract offer range','offer_low',1]];
-  $('#dlg').innerHTML=`<div class="row" style="justify-content:space-between"><h1>${esc(p.address)}</h1><button class="btn" onclick="$('#dlg').close()">Close</button></div>
+  $('#dlg').innerHTML=`<div class="row" style="justify-content:space-between"><h1 class="pii">${esc(p.address)}</h1><button class="btn" onclick="$('#dlg').close()">Close</button></div>
   <p class="sub">${esc(p.neighborhood)}, Cleveland OH ${esc(p.zip)} · score <b>${p.score}</b> · ${esc(p.buyer_profile)} · <a href="${esc(p.record_url)}" target="_blank" rel="noopener">county record</a>${p.photo_url?` · <a href="${esc(p.photo_url)}" target="_blank" rel="noopener">2022 survey photo</a>`:''}</p>
   <h2>Why it scored</h2><ul class="flags">${p.score_breakdown.map(b=>`<li><span class="mono">+${b.points}</span><span>${esc(b.evidence)}</span></li>`).join('')}</ul>
-  <h2>Record</h2><div class="scroll"><table><tbody>${facts.map(([l,f,money])=>`<tr><td class="muted">${l}</td><td class="${money?'num':''}">${f==='offer_low'?`${usd(p.offer_low)} – ${usd(p.offer_high)}`:f==='violations_6mo'?`${p.violations_6mo} / ${p.violations_total}`:money?usd(p[f]):esc(p[f]??'')||'<span class="chip">UNKNOWN</span>'}</td><td>${st(f)}</td><td class="muted">${esc(pv[f]?.source??'')}</td></tr>`).join('')}</tbody></table></div>
+  <h2>Record</h2><div class="scroll"><table><tbody>${facts.map(([l,f,money])=>`<tr><td class="muted">${l}</td><td class="${money?'num':''} ${['owner_name','owner_mailing','parcel_id'].includes(f)?'pii':''}">${f==='offer_low'?`${usd(p.offer_low)} – ${usd(p.offer_high)}`:f==='violations_6mo'?`${p.violations_6mo} / ${p.violations_total}`:money?usd(p[f]):esc(p[f]??'')||'<span class="chip">UNKNOWN</span>'}</td><td>${st(f)}</td><td class="muted">${esc(pv[f]?.source??'')}</td></tr>`).join('')}</tbody></table></div>
   <p class="muted">ARV confidence: ${esc(p.arv_confidence)} from ${p.arv_comps} comps. Numbers: ${chip(p.economics_flag??'—')}</p>
   <div class="row"><button class="btn" onclick="draftProp(${p.id},'contractor_bid')">Draft contractor bid request</button><button class="btn" onclick="draftProp(${p.id},'owner_letter')">Draft owner letter</button></div>`;
   $('#dlg').showModal();
