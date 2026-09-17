@@ -44,7 +44,7 @@ ${signature(s, true, channel)}`,
   wholesaler_service_offer: {
     audience: 'wholesaler', channel: 'email', track: 'client',
     objective: 'Offer underwriting + distressed-list support to a wholesaler; get a sample request.',
-    render: ({ b, s, stats, example }) => ({
+    render: ({ b, s, stats, example, channel }) => ({
       subject: `Cleveland distressed-property list + underwriting (free sample)`,
       body: `Hi ${recipientName(b)},
 
@@ -55,7 +55,7 @@ Example (address withheld): ${example}
 
 Happy to send 10 for your zips free so you can judge the quality. Ongoing: ${usd(Number(s.service_price_week)) ?? MISSING('service_price_week')}/week.
 
-${signature(s, true)}`,
+${signature(s, true, channel)}`,
     }),
   },
 
@@ -63,7 +63,7 @@ ${signature(s, true)}`,
     audience: 'cash_buyer', channel: 'email', track: 'deal',
     objective: 'Assign a signed purchase contract to a matched cash buyer.',
     requiresContract: true,
-    render: ({ b, p, o, s }) => ({
+    render: ({ b, p, o, s, channel }) => ({
       subject: `Assignable contract: ${p.units ?? 1}-family, ${p.neighborhood ?? p.city} (${p.zip})`,
       body: `Hi ${recipientName(b)},
 
@@ -79,14 +79,14 @@ Estimates (mine, not verified):
 
 Assignment price: ${usd(o?.contract_price != null && o?.expected_fee != null ? o.contract_price + o.expected_fee : null) ?? MISSING('assignment_price')} (contract ${usd(o?.contract_price) ?? MISSING('contract_price')} + assignment fee). Walk-through and proof of funds required.
 
-${signature(s, true)}`,
+${signature(s, true, channel)}`,
     }),
   },
 
   owner_letter: {
     audience: 'owner', channel: 'mail', track: 'deal',
     objective: 'Invite the owner to call if they have considered selling. No pressure, no claims about their situation.',
-    render: ({ p, s }) => ({
+    render: ({ p, s, channel }) => ({
       subject: `About ${p.address}`,
       body: `Hello ${p.owner_name ?? MISSING('owner_name')},
 
@@ -96,14 +96,14 @@ To be upfront: if we agree on a price, I may assign my purchase contract to anot
 
 If you're not interested, no reply is needed and you won't hear from me again.
 
-${signature(s, false)}`,
+${signature(s, false, channel)}`,
     }),
   },
 
   agent_intro: {
     audience: 'agent', channel: 'email', track: 'client',
     objective: 'Build a relationship with a local licensed agent (retail-listing referrals go to them; no fee requested).',
-    render: ({ b, s, stats }) => ({
+    render: ({ b, s, stats, channel }) => ({
       subject: `Cleveland distressed-inventory research: happy to share`,
       body: `Hi ${recipientName(b)},
 
@@ -111,27 +111,27 @@ I research distressed residential property in Cleveland from public records (${s
 
 Would you be open to a short intro call?
 
-${signature(s, true)}`,
+${signature(s, true, channel)}`,
     }),
   },
 
   contractor_bid: {
     audience: 'contractor', channel: 'email', track: 'deal',
     objective: 'Get a real repair estimate to replace the rule-of-thumb estimate.',
-    render: ({ b, p, s }) => ({
+    render: ({ b, p, s, channel }) => ({
       subject: `Repair estimate request: ${p.units ?? 1}-family in ${p.neighborhood ?? p.city}`,
       body: `Hi ${recipientName(b)},
 
 Could you quote a walkthrough and repair estimate for ${p.address}, ${p.city} ${p.zip}? County records: ${p.living_sqft ?? MISSING('living_sqft')} sq ft, built ${p.year_built ?? MISSING('year_built')}, city survey condition grade ${p.condition_grade ?? 'UNKNOWN'}. Access would be arranged with the owner first.
 
-${signature(s, true)}`,
+${signature(s, true, channel)}`,
     }),
   },
 
   referral_partner: {
     audience: 'referral_partner', channel: 'email', track: 'client',
     objective: 'Partner with a VA agency, REIA or coach who serves Cleveland investors and can resell/refer the list.',
-    render: ({ b, s, stats }) => ({
+    render: ({ b, s, stats, channel }) => ({
       subject: `Partnership: Cleveland distressed-property data for your members/clients`,
       body: `Hi ${recipientName(b)},
 
@@ -139,7 +139,7 @@ I produce a weekly ranked list of distressed Cleveland properties from county re
 
 Open to a quick conversation?
 
-${signature(s, true)}`,
+${signature(s, true, channel)}`,
     }),
   },
 };
