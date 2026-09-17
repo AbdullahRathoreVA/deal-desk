@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deal Desk</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--ground:#F2F4F0;--surface:#FFFFFF;--ink:#18211D;--muted:#5B6862;--line:#D7DDD8;--accent:#1F5F4A;--accent-ink:#FFFFFF;--accent-soft:#E2EEE8;
+--ok:#2F7D4F;--ok-soft:#E3F1E8;--warn:#9A6212;--warn-soft:#FBF0DC;--crit:#B42318;--crit-soft:#FBE7E5;--unk:#6B6F80;--unk-soft:#ECEDF2;
+--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ground:#0F1412;--surface:#161D1A;--ink:#E4EBE7;--muted:#98A69F;--line:#2A3430;--accent:#62B28F;--accent-ink:#0F1412;--accent-soft:#1D2D26;
+--ok:#6CC08F;--ok-soft:#18291F;--warn:#E0A94F;--warn-soft:#2E2414;--crit:#F07B70;--crit-soft:#331A18;--unk:#A7ABBC;--unk-soft:#23252D}}
+:root[data-theme="dark"]{--ground:#0F1412;--surface:#161D1A;--ink:#E4EBE7;--muted:#98A69F;--line:#2A3430;--accent:#62B28F;--accent-ink:#0F1412;--accent-soft:#1D2D26;
+--ok:#6CC08F;--ok-soft:#18291F;--warn:#E0A94F;--warn-soft:#2E2414;--crit:#F07B70;--crit-soft:#331A18;--unk:#A7ABBC;--unk-soft:#23252D}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ground);color:var(--ink);font:14px/1.5 var(--sans)}
+a{color:var(--accent)}
+.app{display:grid;grid-template-columns:200px 1fr;min-height:100vh}
+nav{border-right:1px solid var(--line);padding:20px 12px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh}
+.brand{font-weight:600;letter-spacing:.02em;padding:0 10px 4px}
+.brand small{display:block;font:500 11px var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+nav button{all:unset;cursor:pointer;padding:7px 10px;border-radius:6px;display:flex;justify-content:space-between;color:var(--muted)}
+nav button:hover{color:var(--ink);background:var(--accent-soft)}
+nav button[aria-current="true"]{color:var(--ink);background:var(--surface);box-shadow:inset 2px 0 0 var(--accent)}
+nav button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.count{font:500 11px var(--mono);background:var(--crit-soft);color:var(--crit);border-radius:9px;padding:0 6px}
+main{padding:24px 28px 48px;min-width:0;display:flex;flex-direction:column;gap:20px}
+h1{font-size:22px;font-weight:600;margin:0;text-wrap:balance}
+h2{font-size:13px;font-weight:600;margin:0;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.sub{color:var(--muted);margin:2px 0 0}
+.next{background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:16px 18px}
+.next h2{color:inherit;opacity:.8}.next p{margin:4px 0 0;font-size:16px;font-weight:500}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.kpis{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.kpi{background:var(--surface);padding:12px 14px}.kpi b{display:block;font:500 20px var(--mono);font-variant-numeric:tabular-nums}.kpi span{color:var(--muted);font-size:12px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--accent-soft)}
+.num{text-align:right;font-family:var(--mono);font-size:13px;white-space:nowrap}
+.mono{font-family:var(--mono);font-size:12px}
+.chip{display:inline-block;font:500 11px var(--mono);letter-spacing:.03em;padding:1px 6px;border-radius:4px;white-space:nowrap;background:var(--unk-soft);color:var(--unk)}
+.chip.VERIFIED,.chip.OK,.chip.APPROVED,.chip.SENT,.chip.FACT,.chip.REVENUE,.chip.RESPONDED{background:var(--ok-soft);color:var(--ok)}
+.chip.ESTIMATED,.chip.THIN,.chip.WARN,.chip.DRAFT,.chip.ESTIMATE,.chip.SOURCE,.chip.ASSUMPTION,.chip.STATED{background:var(--warn-soft);color:var(--warn)}
+.chip.BLOCK,.chip.BAD_NUMBERS,.chip.REJECTED,.chip.fail{background:var(--crit-soft);color:var(--crit)}
+.bar{display:inline-block;height:6px;border-radius:3px;background:var(--accent);vertical-align:middle;margin-right:6px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--ground);border:1px solid var(--line);border-radius:6px;padding:6px 8px;max-width:100%}
+textarea{width:100%;min-height:220px;font:13px/1.5 var(--mono)}
+button.btn{font:inherit;font-weight:500;cursor:pointer;border-radius:6px;padding:6px 12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.danger{color:var(--crit)}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:0}dt{color:var(--muted)}dd{margin:0}
+.flags{display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none}
+.flags li{display:flex;gap:8px;align-items:baseline}
+.card{border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--surface)}
+.muted{color:var(--muted)}
+#toast{position:fixed;right:16px;bottom:16px;background:var(--ink);color:var(--ground);padding:8px 14px;border-radius:8px}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);width:min(760px,calc(100vw - 32px));padding:20px}
+dialog::backdrop{background:rgb(0 0 0/.35)}
+@media (max-width:760px){.app{grid-template-columns:1fr}nav{position:static;height:auto;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line)}.brand{display:none}main{padding:16px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav id="nav" aria-label="Sections"><div class="brand">Deal Desk<small>Cleveland, OH</small></div></nav>
+  <main id="main" aria-live="polite"></main>
+</div>
+<div id="toast" hidden></div>
+<dialog id="dlg"></dialog>
+<script>
+const VIEWS=[['today','Today'],['overview','Overview'],['properties','Leads & properties'],['buyers','Buyers'],['approvals','Approvals'],['outreach','Outreach'],['deals','Deals'],['money','Money'],['research','Research'],['tasks','Tasks'],['settings','Settings']];
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const usd=n=>n==null?'<span class="chip">UNKNOWN</span>':'$'+Math.round(n).toLocaleString('en-US');
+const chip=(t,cls=t)=>`<span class="chip ${esc(cls)}">${esc(t)}</span>`;
+const api=async(path,opt={})=>{const r=await fetch('/api/'+path,{...opt,headers:{'Content-Type':'application/json'},body:opt.body&&JSON.stringify(opt.body)});const j=await r.json();if(!r.ok)throw new Error(j.error);return j};
+const toast=m=>{const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,4000)};
+const act=async(fn,ok)=>{try{await fn();if(ok)toast(ok);render()}catch(e){toast(e.message)}};
+let view=(()=>{try{return localStorage.getItem('dd.view')}catch{return null}})()||'today';
+
+function navigate(v){view=v;try{localStorage.setItem('dd.view',v)}catch{}render()}
+async function renderNav(){
+  const o=await api('overview');
+  $('#nav').querySelectorAll('button').forEach(b=>b.remove());
+  for(const [k,label] of VIEWS){const b=document.createElement('button');b.setAttribute('aria-current',k===view);
+    const badge=k==='approvals'?o.pending_approvals:k==='tasks'?o.open_tasks:0;
+    b.innerHTML=`<span>${label}</span>${badge?`<span class="count">${badge}</span>`:''}`;b.onclick=()=>navigate(k);$('#nav').append(b)}
+}
+async function render(){renderNav();const m=$('#main');try{m.innerHTML=await V[view]()}catch(e){m.innerHTML=`<div class="panel">${esc(e.message)}</div>`}}
+
+const V={
+async today(){
+  const r=await api('today'),o=r.overview;
+  return `<header><h1>Today, ${esc(r.date)}</h1><p class="sub">Last data refresh: ${esc(o.last_ingest?.finished_at?.slice(0,16).replace('T',' ')??'never')}</p></header>
+  <section class="next"><h2>Next action</h2><p>${esc(r.next_action)}</p></section>
+  ${r.blockers.length?`<section class="panel"><h2>Blockers</h2><ul class="flags">${r.blockers.map(b=>`<li>${chip('BLOCK')}<span>${esc(b)}</span></li>`).join('')}</ul></section>`:''}
+  <div class="grid">
+   <section class="panel"><h2>Today's opportunities</h2>${r.opportunities.map(p=>`<div class="row" style="justify-content:space-between"><a href="#" onclick="showProperty(${p.id});return false">${esc(p.address)}</a><span class="mono">score ${p.score}</span></div><div class="muted">${esc(p.neighborhood)} · ARV ${usd(p.est_arv)} ${chip('ESTIMATED')} · max contract ${usd(p.offer_high)}</div>`).join('')||'<p class="muted">Run the ingest to find properties.</p>'}</section>
+   <section class="panel"><h2>Your actions</h2>${r.tasks.map(t=>`<div class="row">${chip(t.kind)}<span>${esc(t.title)}</span></div>`).join('')||'<p class="muted">Nothing due.</p>'}
+     <div class="row"><span class="mono">${r.approvals.length}</span> drafts to review · <span class="mono">${r.approved.length}</span> approved to send</div></section>
+   <section class="panel"><h2>Money</h2><dl><dt>Actual revenue</dt><dd class="mono">${usd(o.actual_revenue??0)}</dd><dt>Expenses</dt><dd class="mono">${usd(o.expenses??0)}</dd><dt>Net profit</dt><dd class="mono">${usd(o.net_profit??0)}</dd><dt>Expected (not yet income)</dt><dd class="mono">${usd(o.expected_revenue??0)}</dd></dl></section>
+  </div>`},
+async overview(){
+  const o=await api('overview'),pct=x=>x==null?'n/a':(x*100).toFixed(1)+'%';
+  const k=[['Total leads',o.total_leads],['Qualified leads',o.qualified_leads],['Active conversations',o.active_conversations],['Potential deals',o.potential_deals],['Pipeline value (active)',usd(o.estimated_pipeline_value??0)],['Actual revenue',usd(o.actual_revenue??0)],['Expenses',usd(o.expenses??0)],['Net profit',usd(o.net_profit??0)],['Buyers & prospects',o.buyers],['Messages sent',o.messages_sent],['Response rate',pct(o.response_rate)],['Cost per lead',o.cost_per_lead==null?'n/a':usd(o.cost_per_lead)]];
+  return `<header><h1>Overview</h1><p class="sub">Pipeline value counts only deals in active conversation. It is not income.</p></header><section class="kpis">${k.map(([l,v])=>`<div class="kpi"><b>${v??0}</b><span>${l}</span></div>`).join('')}</section>
+  <section class="panel"><h2>What the qualified list could be worth</h2><p>${o.qualified_leads} qualified properties × the minimum target fee = <b class="mono">${usd(o.theoretical_spread_qualified??0)}</b> ${chip('ESTIMATED')}. Theoretical only: every one of them would need a willing owner, a signed contract and a buyer.</p></section>`},
+async properties(){
+  const f=V.pf??={q:'',min_score:40,sort:'score'};
+  const d=await api(`properties?q=${encodeURIComponent(f.q)}&min_score=${f.min_score}&sort=${f.sort}&limit=200`);
+  const max=Math.max(1,...d.rows.map(r=>r.score));
+  return `<header><h1>Leads & properties</h1><p class="sub">${d.total.toLocaleString()} matching · county facts are VERIFIED, economics are ESTIMATED</p></header>
+  <div class="row"><input id="pq" placeholder="Address, zip, neighborhood, owner" value="${esc(f.q)}"><label>Min score <input id="pmin" type="number" value="${f.min_score}" style="width:70px"></label>
+   <select id="psort">${['score','spread','arv','delinquency','recent'].map(s=>`<option ${s===f.sort?'selected':''}>${s}</option>`).join('')}</select>
+   <button class="btn primary" onclick="V.pf={q:$('#pq').value,min_score:$('#pmin').value||0,sort:$('#psort').value};render()">Filter</button></div>
+  <div class="panel scroll"><table><thead><tr><th>Score</th><th>Address</th><th>Neighborhood</th><th>Units</th><th>Signals</th><th class="num">County value</th><th class="num">Est. ARV</th><th class="num">Est. repairs</th><th class="num">Max contract</th><th>Numbers</th><th>Stage</th></tr></thead><tbody>
+  ${d.rows.map(r=>`<tr class="click" onclick="showProperty(${r.id})"><td class="mono"><span class="bar" style="width:${Math.round(r.score/max*40)}px"></span>${r.score}</td><td>${esc(r.address)}<div class="muted mono">${esc(r.zip)}</div></td><td>${esc(r.neighborhood)}</td><td class="num">${r.units??''}</td>
+  <td>${[r.foreclosure_flag?'foreclosure':'',r.tax_delinquent_amount>0?'tax '+usd(r.tax_delinquent_amount):'',r.violations_6mo?r.violations_6mo+' viol.':'',r.survey_category==='Vacant Structure'?'vacant':'',r.condition_grade&&'DF'.includes(r.condition_grade)?'grade '+r.condition_grade:'',r.owner_out_of_state?'out-of-state':''].filter(Boolean).map(s=>`<span class="chip">${esc(s)}</span>`).join(' ')}</td>
+  <td class="num">${usd(r.county_market_value)}</td><td class="num">${usd(r.est_arv)}</td><td class="num">${usd(r.est_repairs)}</td><td class="num">${usd(r.offer_high)}</td><td>${chip(r.economics_flag??'—')}</td><td>${r.failure?chip(r.failure,'fail'):chip(r.stage??'—')}</td></tr>`).join('')}</tbody></table></div>`},
+async buyers(){
+  const b=await api('buyers');
+  return `<header><h1>Buyers & prospects</h1><p class="sub">Investors, cash buyers, wholesalers, agents, contractors and partners, with their publicly stated criteria</p></header>
+  <section class="panel"><h2>Capture from a public post or website</h2><p class="muted">Paste text you read yourself (for example an "I'm buying in..." post in a Facebook group you belong to). Nothing is scraped.</p>
+   <div class="grid"><input id="cc" placeholder="Company"><input id="cn" placeholder="Person name (optional)"><input id="cu" placeholder="Source URL"><select id="cm"><option value="facebook">facebook</option><option value="email">email</option><option value="website_form">website_form</option></select><input id="cv" placeholder="Contact (profile URL / email)"></div>
+   <textarea id="ct" style="min-height:90px" placeholder="Paste their stated buying criteria"></textarea>
+   <div class="row"><button class="btn" onclick="previewCapture()">Preview parse</button><button class="btn primary" onclick="saveCapture()">Save buyer</button><span id="cp" class="mono muted"></span></div></section>
+  <div class="panel scroll"><table><thead><tr><th>Company / name</th><th>Role</th><th>Criteria</th><th>Status</th><th>Verification</th><th>Source</th><th></th></tr></thead><tbody>
+  ${b.map(x=>`<tr><td>${esc(x.company??x.name)}</td><td>${esc(x.role)}</td><td class="mono">${esc(JSON.stringify(x.criteria))}</td><td>${chip(x.criteria_status)}</td><td>${chip(x.do_not_contact?'do not contact':x.verification,x.do_not_contact?'BLOCK':x.verification==='verified'?'VERIFIED':'')}</td><td>${x.source_url?`<a href="${esc(x.source_url)}" target="_blank" rel="noopener">link</a>`:esc(x.source)}</td>
+  <td class="row">${x.verification!=='verified'?`<button class="btn" onclick="act(()=>api('buyers/${x.id}',{method:'PATCH',body:{verification:'verified'}}),'Marked verified')">Verified</button>`:''}${x.do_not_contact?'':`<button class="btn danger" onclick="act(()=>api('buyers/${x.id}',{method:'PATCH',body:{do_not_contact:1}}),'Marked do-not-contact')">Do not contact</button>`}<select onchange="draftFor(${x.id},this.value);this.value=''"><option value="">Draft…</option><option>investor_service_offer</option><option>wholesaler_service_offer</option><option>agent_intro</option><option>referral_partner</option></select></td></tr>`).join('')}</tbody></table></div>`},
+async approvals(){
+  const m=await api('outreach?status=DRAFT');
+  return `<header><h1>Approvals</h1><p class="sub">Draft → review → approve → you send it yourself → mark sent. Blocked drafts cannot be approved.</p></header>
+  ${m.map(x=>{const blocks=x.risk_flags.filter(f=>f.level==='BLOCK');return `<article class="card"><div class="row" style="justify-content:space-between"><b>${esc(x.recipient)}</b><span>${chip(x.template)} ${chip(x.channel)} ${blocks.length?chip('BLOCKED','BLOCK'):chip('READY','OK')}</span></div>
+   <dl><dt>Why selected</dt><dd>${esc(x.why_selected)}</dd><dt>Objective</dt><dd>${esc(x.objective)}</dd><dt>Facts used</dt><dd class="mono">${esc(JSON.stringify(x.facts_used.stats??x.facts_used.property??{}))}</dd></dl>
+   <ul class="flags">${x.risk_flags.map(f=>`<li>${chip(f.level)}<span>${esc(f.msg)}</span></li>`).join('')}</ul>
+   <input id="s${x.id}" value="${esc(x.subject)}" aria-label="Subject"><textarea id="b${x.id}" aria-label="Message">${esc(x.body)}</textarea>
+   <div class="row"><button class="btn primary" onclick="act(()=>api('outreach/${x.id}/review',{method:'POST',body:{decision:'approve',subject:$('#s${x.id}').value,body:$('#b${x.id}').value}}),'Approved. Send it from your own account, then mark it sent.')">Approve</button>
+   <button class="btn danger" onclick="act(()=>api('outreach/${x.id}/review',{method:'POST',body:{decision:'reject'}}),'Rejected')">Reject</button></div></article>`}).join('')||'<p class="panel muted">No drafts waiting.</p>'}`},
+async outreach(){
+  const m=(await api('outreach')).filter(x=>x.status!=='DRAFT');
+  return `<header><h1>Outreach log</h1><p class="sub">Every message, its status, and follow-ups</p></header><div class="panel scroll"><table><thead><tr><th>#</th><th>Recipient</th><th>Template</th><th>Status</th><th>Sent</th><th>Follow up</th><th>Response</th><th></th></tr></thead><tbody>
+  ${m.map(x=>`<tr><td class="mono">${x.id}</td><td>${esc(x.recipient)}</td><td>${esc(x.template)}</td><td>${chip(x.status)}</td><td class="mono">${esc(x.sent_at?.slice(0,10))}</td><td class="mono">${esc(x.follow_up_at)}</td><td>${esc(x.response)}</td>
+  <td>${x.status==='APPROVED'?`<button class="btn" onclick="copyMsg(${x.id})">Copy</button> <button class="btn primary" onclick="act(()=>api('outreach/${x.id}/sent',{method:'POST'}),'Logged as sent')">Mark sent</button>`:''}
+  ${x.status==='SENT'?`<select onchange="logResp(${x.id},this.value)"><option value="">Log reply…</option><option value="interested">interested</option><option value="responded">responded</option><option value="not_interested">not interested</option><option value="opt_out">opt out</option><option value="no_response">no response</option></select>`:''}</td></tr>`).join('')}</tbody></table></div>`},
+async deals(){
+  const d=await api('opportunities?active=1'),S={deal:['LEAD','QUALIFIED','CONTACTED','RESPONDED','INTERESTED','PROPERTY_ANALYSIS','OFFER_DISCUSSION','CONTRACT_REVIEW','BUYER_MATCH','CLOSING','REVENUE'],client:['LEAD','QUALIFIED','CONTACTED','RESPONDED','INTERESTED','SAMPLE_SENT','PRICING','AGREEMENT','INVOICED','REVENUE']},F=['INVALID','NO_RESPONSE','NOT_INTERESTED','BAD_NUMBERS','DUPLICATE','BUYER_UNAVAILABLE','LEGAL_ISSUE','DATA_INSUFFICIENT'];
+  return `<header><h1>Deals</h1><p class="sub">Client track = selling the research service. Deal track = your own contracts (locked until Track B is ready).</p></header><div class="panel scroll"><table><thead><tr><th>#</th><th>Track</th><th>Who / what</th><th>Stage</th><th>Gates</th><th class="num">Expected fee</th><th class="num">Actual</th><th>Move</th></tr></thead><tbody>
+  ${d.map(o=>`<tr><td class="mono">${o.id}</td><td>${chip(o.track)}</td><td>${esc(o.company??o.name??o.address)}</td><td>${o.failure?chip(o.failure,'fail'):chip(o.stage)}</td>
+  <td>${o.track==='deal'?['contract_signed','seller_disclosure','professional_review'].map(g=>`<label class="mono"><input type="checkbox" ${o[g]?'checked':''} onchange="act(()=>api('opportunities/${o.id}',{method:'PATCH',body:{${g}:this.checked?1:0}}))"> ${g.replace('_',' ')}</label>`).join('<br>'):'—'}</td>
+  <td class="num"><input type="number" value="${o.expected_fee??''}" style="width:90px" onchange="act(()=>api('opportunities/${o.id}',{method:'PATCH',body:{expected_fee:Number(this.value)}}))"></td>
+  <td class="num"><input type="number" value="${o.actual_fee??''}" style="width:90px" onchange="act(()=>api('opportunities/${o.id}',{method:'PATCH',body:{actual_fee:Number(this.value)}}))"></td>
+  <td><select onchange="act(()=>api('opportunities/${o.id}/stage',{method:'POST',body:{stage:this.value}}),'Moved')"><option value="">Move to…</option>${[...S[o.track],...F].map(s=>`<option>${s}</option>`).join('')}</select></td></tr>`).join('')||'<tr><td colspan="8" class="muted">No active deals yet. Conversations appear here once you mark outreach sent.</td></tr>'}</tbody></table></div>`},
+async money(){
+  const [m,o]=await Promise.all([api('money'),api('overview')]);
+  return `<header><h1>Money</h1><p class="sub">Only "actual" rows count as revenue or cost. Expected rows are forecasts.</p></header>
+  <section class="kpis">${[['Actual revenue',usd(o.actual_revenue??0)],['Expenses',usd(o.expenses??0)],['Net profit',usd(o.net_profit??0)],['Expected revenue',usd(o.expected_revenue??0)],['Cost per lead',o.cost_per_lead==null?'n/a':usd(o.cost_per_lead)],['Conversion',o.conversion_rate==null?'n/a':(o.conversion_rate*100).toFixed(2)+'%']].map(([l,v])=>`<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join('')}</section>
+  <section class="panel"><h2>Add entry</h2><div class="row"><input id="md" type="date"><select id="mk"><option>expense</option><option>revenue</option></select><select id="ms"><option>actual</option><option>expected</option></select><input id="mc" placeholder="Category (software, marketing, service_fee…)"><input id="ma" type="number" placeholder="Amount USD" style="width:120px"><input id="mn" placeholder="Note">
+  <button class="btn primary" onclick="act(()=>api('money',{method:'POST',body:{date:$('#md').value||undefined,kind:$('#mk').value,status:$('#ms').value,category:$('#mc').value,amount:$('#ma').value,note:$('#mn').value}}),'Saved')">Add</button></div></section>
+  <div class="panel scroll"><table><thead><tr><th>Date</th><th>Kind</th><th>Status</th><th>Category</th><th class="num">Amount</th><th>Note</th></tr></thead><tbody>${m.map(x=>`<tr><td class="mono">${esc(x.date)}</td><td>${esc(x.kind)}</td><td>${chip(x.status)}</td><td>${esc(x.category)}</td><td class="num">${usd(x.amount)}</td><td>${esc(x.note)}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">$0 spent so far.</td></tr>'}</tbody></table></div>`},
+async research(){
+  const e=await api('evidence'),topics=[...new Set(e.map(x=>x.topic))];
+  return `<header><h1>Research & evidence</h1><p class="sub">Every claim the strategy relies on, labelled FACT, SOURCE (secondary), ESTIMATE, ASSUMPTION or UNKNOWN</p></header>
+  ${topics.map(t=>`<section class="panel"><h2>${esc(t)}</h2>${e.filter(x=>x.topic===t).map(x=>`<div class="row" style="align-items:baseline;flex-wrap:nowrap">${chip(x.label)}<span>${esc(x.claim)} ${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.source_title)}</a>`:`<span class="muted">${esc(x.source_title??'')}</span>`}</span></div>`).join('')}</section>`).join('')}`},
+async tasks(){
+  const t=await api('tasks');
+  return `<header><h1>Tasks</h1><p class="sub">Things only you can do: logins, identity checks, sending from your own accounts</p></header><div class="panel">${t.map(x=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:8px"><div>${chip(x.kind)} ${chip(x.status,x.status==='DONE'?'OK':'')} <b>${esc(x.title)}</b><div class="muted">${esc(x.detail)}</div></div>${x.status==='OPEN'?`<button class="btn" onclick="act(()=>api('tasks/${x.id}/done',{method:'POST'}),'Done')">Mark done</button>`:''}</div>`).join('')}</div>`},
+async settings(){
+  const s=await api('settings');
+  const F=[['sender_name','Your real name'],['sender_business','Business name'],['sender_email','Business email'],['sender_postal','Postal address (CAN-SPAM)'],['service_price_week','Weekly list price (USD)'],['fee_target_low','Min assignment fee target'],['fee_target_high','Max assignment fee target'],['payment_ready','Payment receiving set up (true/false)'],['track_b_ready','Track B ready: US entity + EMD + attorney-reviewed Ohio contract (true/false)']];
+  return `<header><h1>Settings</h1><p class="sub">Drafts use these exactly. Nothing is invented if a field is blank.</p></header><section class="panel"><dl>${F.map(([k,l])=>`<dt><label for="set_${k}">${l}</label></dt><dd><input id="set_${k}" value="${esc(s[k]??'')}" style="width:100%"></dd>`).join('')}</dl>
+  <div class="row"><button class="btn primary" onclick="act(()=>api('settings',{method:'PUT',body:Object.fromEntries(${JSON.stringify(F.map(f=>f[0]))}.map(k=>[k,$('#set_'+k).value]))}),'Settings saved')">Save</button></div></section>`},
+};
+
+async function showProperty(id){
+  const p=await api('properties/'+id),pv=p.provenance,st=f=>chip(pv[f]?.status??'UNKNOWN');
+  const facts=[['Parcel','parcel_id'],['Units','units'],['Living sq ft','living_sqft'],['Year built','year_built'],['Beds','beds'],['Baths','baths'],['Owner','owner_name'],['Owner mailing','owner_mailing'],['Last sale','last_sale_date'],['Last sale amount','last_sale_amount',1],['County market value','county_market_value',1],['Tax delinquent','tax_delinquent_amount',1],['Violations (6 mo / all)','violations_6mo'],['Condition (2022 survey)','condition_grade'],['Listing status','listing_status'],['Asking price','asking_price',1],['Est. ARV','est_arv',1],['Est. repairs','est_repairs',1],['Buyer max (70% rule)','mao',1],['Contract offer range','offer_low',1]];
+  $('#dlg').innerHTML=`<div class="row" style="justify-content:space-between"><h1>${esc(p.address)}</h1><button class="btn" onclick="$('#dlg').close()">Close</button></div>
+  <p class="sub">${esc(p.neighborhood)}, Cleveland OH ${esc(p.zip)} · score <b>${p.score}</b> · ${esc(p.buyer_profile)} · <a href="${esc(p.record_url)}" target="_blank" rel="noopener">county record</a>${p.photo_url?` · <a href="${esc(p.photo_url)}" target="_blank" rel="noopener">2022 survey photo</a>`:''}</p>
+  <h2>Why it scored</h2><ul class="flags">${p.score_breakdown.map(b=>`<li><span class="mono">+${b.points}</span><span>${esc(b.evidence)}</span></li>`).join('')}</ul>
+  <h2>Record</h2><div class="scroll"><table><tbody>${facts.map(([l,f,money])=>`<tr><td class="muted">${l}</td><td class="${money?'num':''}">${f==='offer_low'?`${usd(p.offer_low)} – ${usd(p.offer_high)}`:f==='violations_6mo'?`${p.violations_6mo} / ${p.violations_total}`:money?usd(p[f]):esc(p[f]??'')||'<span class="chip">UNKNOWN</span>'}</td><td>${st(f)}</td><td class="muted">${esc(pv[f]?.source??'')}</td></tr>`).join('')}</tbody></table></div>
+  <p class="muted">ARV confidence: ${esc(p.arv_confidence)} from ${p.arv_comps} comps. Numbers: ${chip(p.economics_flag??'—')}</p>
+  <div class="row"><button class="btn" onclick="draftProp(${p.id},'contractor_bid')">Draft contractor bid request</button><button class="btn" onclick="draftProp(${p.id},'owner_letter')">Draft owner letter</button></div>`;
+  $('#dlg').showModal();
+}
+async function draftProp(pid,template){
+  if(template==='contractor_bid'){const b=await api('buyers'),c=b.find(x=>x.role==='contractor');if(!c)return toast('Add a contractor in Buyers first (role: contractor).');return act(()=>api('outreach/draft',{method:'POST',body:{template,property_id:pid,buyer_id:c.id}}),'Draft created in Approvals')}
+  act(()=>api('outreach/draft',{method:'POST',body:{template,property_id:pid}}),'Draft created in Approvals')
+}
+const draftFor=(bid,template)=>template&&act(()=>api('outreach/draft',{method:'POST',body:{template,buyer_id:bid}}),'Draft created in Approvals');
+const capBody=()=>({company:$('#cc').value||undefined,name:$('#cn').value||undefined,source_url:$('#cu').value||undefined,contact_method:$('#cm').value,contact_value:$('#cv').value||undefined,text:$('#ct').value,source:'manual capture'});
+async function previewCapture(){try{const r=await api('capture/preview',{method:'POST',body:{text:$('#ct').value}});$('#cp').textContent=`${r.role} · ${r.criteria_status} · ${JSON.stringify(r.criteria)}`}catch(e){toast(e.message)}}
+const saveCapture=()=>act(()=>api('buyers',{method:'POST',body:capBody()}),'Buyer saved');
+async function copyMsg(id){const m=(await api('outreach')).find(x=>x.id===id);await navigator.clipboard.writeText(`Subject: ${m.subject}\n\n${m.body}`);toast('Copied. Paste into your own email or form.')}
+const logResp=(id,outcome)=>outcome&&act(()=>api(`outreach/${id}/response`,{method:'POST',body:{outcome,text:prompt('Paste their reply (optional)')??''}}),'Reply logged');
+render();
+</script>
+</body>
+</html>

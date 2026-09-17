@@ -1,0 +1,17 @@
+{
+  "name": "deal-desk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Remote real-estate deal desk: public-records distress engine, underwriting, buyer matching, approval-gated outreach, pipeline and money tracking.",
+  "engines": { "node": ">=22.13.0" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.mjs",
+    "seed": "node --disable-warning=ExperimentalWarning src/seed.mjs",
+    "ingest": "node --disable-warning=ExperimentalWarning src/ingest/cleveland.mjs",
+    "match": "node --disable-warning=ExperimentalWarning src/cli.mjs match",
+    "draft:prospects": "node --disable-warning=ExperimentalWarning src/cli.mjs draft-prospects",
+    "daily": "node --disable-warning=ExperimentalWarning src/daily.mjs",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.mjs"
+  }
+}
