@@ -51,3 +51,7 @@ Buyers (public sites, manual capture) ─► match score + reasons ─► draft 
 | Track B only | US entity, earnest money, Ohio attorney-reviewed contract, US tax pro (FIRPTA) | Legal and financial commitments |
 
 Data: `data/dealdesk.db` (SQLite, git-ignored, contains owner names from public records; keep it local).
+
+## Case study
+
+Screenshots and a walkthrough of the product: [docs/CASE_STUDY.md](docs/CASE_STUDY.md).
